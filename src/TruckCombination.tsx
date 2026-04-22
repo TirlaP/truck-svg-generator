@@ -110,6 +110,31 @@ function defaultCabLength(v: Vehicle): number {
   return v.kind === 'rigid' ? 3.4 : 2.6;
 }
 
+/** Front/rear overhang (m) of the body box from the trailer's nominal extents.
+ *  Real trailers don't have their box body extending all the way to the kingpin
+ *  or past the turntable: there's chassis exposed at both ends where the
+ *  articulation hardware lives. Rendering this is what gives visible gaps
+ *  between coupled trailers (e.g. between A and B trailers in a B-Double). */
+function bodyOverhang(v: Vehicle): { front: number; rear: number } {
+  const hasKingpin = v.attachments?.some((a) => a.kind === 'kingpin');
+  const hasTurntable = v.attachments?.some((a) => a.kind === 'turntable');
+  switch (v.kind) {
+    case 'semi-trailer':
+      return { front: 0, rear: 0.3 };
+    case 'a-trailer':
+      return { front: 0, rear: 1.1 };
+    case 'b-trailer':
+      return hasKingpin && hasTurntable
+        ? { front: 1.3, rear: 1.0 }
+        : { front: 1.3, rear: 0.3 };
+    case 'dog-trailer':
+    case 'pig-trailer':
+      return { front: 0.8, rear: 0.3 };
+    default:
+      return { front: 0, rear: 0 };
+  }
+}
+
 // ---------- Dolly (inline — simple frame) ----------
 
 function DollyShape({ v, scale }: { v: Vehicle; scale: number }) {
@@ -283,14 +308,19 @@ function VehicleRender({ vehicle, scale }: { vehicle: Vehicle; scale: number }) 
     // Trailers (semi, A, B, dog, pig)
     const bodyType = vehicle.bodyType ?? 'curtain-sider';
     const Body = BODY_COMPONENTS[bodyType];
+    const over = bodyOverhang(vehicle);
+    const bodyLen = Math.max(1, vehicle.length - over.front - over.rear);
     return (
-      <g>
+      <g transform={`translate(${over.front * scale}, 0)`}>
         <Body
           scale={scale}
-          bodyLength={vehicle.length}
+          bodyLength={bodyLen}
           deckHeight={deck}
           topHeight={top}
-          freightSlots={vehicle.freightSlots}
+          freightSlots={vehicle.freightSlots?.map((s) => ({
+            ...s,
+            start: Math.max(0, s.start - over.front),
+          }))}
           color={vehicle.bodyColor}
           vehicle={vehicle}
         />
@@ -442,7 +472,7 @@ export const TruckCombination = forwardRef<SVGSVGElement, Props>(function TruckC
               {showAnnotations && v.label && (
                 <text
                   x={(v.length * scale) / 2}
-                  y={-defaultTopHeight(v) * scale - 8}
+                  y={-defaultTopHeight(v) * scale - 30}
                   textAnchor="middle"
                   fontSize={11}
                   fontFamily="system-ui, sans-serif"

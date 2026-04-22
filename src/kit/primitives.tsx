@@ -380,6 +380,129 @@ export function LandingLegs({
   );
 }
 
+/** Reusable closed-trailer envelope: single solid body with top band, bottom rail,
+ *  chassis, side skirt, landing legs, marker lights, and rear mud flap.
+ *  Each specific closed body (curtain-sider, reefer, box-van, livestock) builds on
+ *  this and adds its own characteristic detail (straps, reefer unit, roller door, slats).
+ *  Bodies are opaque and draw NO internal freight placeholders — the freight renderer
+ *  in TruckCombination draws the actual freight shapes on top. */
+export function ClosedTrailerBody({
+  scale,
+  bodyLength,
+  deckHeight,
+  topHeight,
+  color,
+  trim,
+  hasKingpin = false,
+  cornerRadius = 2,
+}: {
+  scale: number;
+  bodyLength: number;
+  deckHeight: number;
+  topHeight: number;
+  color: string;
+  trim: string;
+  hasKingpin?: boolean;
+  cornerRadius?: number;
+}) {
+  const L = bodyLength * scale;
+  const deckY = -deckHeight * scale;
+  const topY = -topHeight * scale;
+  const bodyH = (topHeight - deckHeight) * scale;
+  return (
+    <g>
+      {/* Body */}
+      <rect
+        x={0}
+        y={topY}
+        width={L}
+        height={bodyH}
+        fill={color}
+        stroke={trim}
+        strokeWidth={0.8}
+        rx={cornerRadius}
+      />
+      {/* Top trim band */}
+      <rect
+        x={0}
+        y={topY}
+        width={L}
+        height={Math.max(3, 0.14 * scale)}
+        fill={trim}
+        opacity={0.85}
+        rx={cornerRadius}
+      />
+      {/* Bottom rail — visually separates body from chassis */}
+      <rect
+        x={0}
+        y={deckY - 0.1 * scale}
+        width={L}
+        height={0.1 * scale}
+        fill={trim}
+        opacity={0.9}
+      />
+      <ChassisRail length={bodyLength} scale={scale} deckHeight={deckHeight - 0.15} />
+      <SideSkirt
+        x={3.5 * scale}
+        width={Math.max(0, L - 6 * scale)}
+        scale={scale}
+        deckHeight={deckHeight}
+        color={color}
+      />
+      {/* Marker lights — two amber along the top, red at rear */}
+      <MarkerLight x={0.6 * scale} y={topY + 3} />
+      <MarkerLight x={L * 0.5} y={topY + 3} />
+      <MarkerLight x={L - 0.6 * scale} y={topY + 3} color={palette.markerRed} />
+      {/* Landing legs on any trailer with a front kingpin */}
+      {hasKingpin && <LandingLegs x={2.0 * scale} deckHeight={deckHeight} scale={scale} raised />}
+      {/* Rear mud flap */}
+      <MudFlap x={L - WHEEL_RADIUS_M * scale} scale={scale} deckHeight={deckHeight} />
+    </g>
+  );
+}
+
+/** Small slot tag rendered on the upper body of a closed trailer so the user can still
+ *  identify which position is which, without drawing a full-height interior rectangle. */
+export function SlotTag({
+  x,
+  y,
+  label,
+  loaded,
+}: {
+  x: number;
+  y: number;
+  label?: string;
+  loaded?: boolean;
+}) {
+  if (!label) return null;
+  const w = label.length * 5 + 8;
+  return (
+    <g transform={`translate(${x}, ${y})`}>
+      <rect
+        x={-w / 2}
+        y={-7}
+        width={w}
+        height={12}
+        fill={loaded ? palette.slotLoadedFill : palette.cabWhite}
+        stroke={loaded ? palette.slotLoadedStroke : palette.annotationMuted}
+        strokeWidth={0.6}
+        rx={2}
+        opacity={0.9}
+      />
+      <text
+        x={0}
+        y={2}
+        textAnchor="middle"
+        fontSize={9}
+        fontFamily="system-ui, sans-serif"
+        fill={palette.annotation}
+      >
+        {label}
+      </text>
+    </g>
+  );
+}
+
 /** Render a freight slot placeholder (dashed rectangle when empty). */
 export function FreightSlotShape({
   x,

@@ -1,15 +1,7 @@
 import type { FC } from 'react';
 import { palette } from '../kit/palette';
 import type { BodyRenderProps } from '../kit/types';
-import {
-  ChassisRail,
-  FreightSlotShape,
-  LandingLegs,
-  MarkerLight,
-  MudFlap,
-  SideSkirt,
-  WHEEL_RADIUS_M,
-} from '../kit/primitives';
+import { ClosedTrailerBody, SlotTag } from '../kit/primitives';
 
 export const defaultProportions = { deckHeight: 1.35, topHeight: 3.9 };
 
@@ -27,6 +19,7 @@ const BoxVan: FC<BodyRenderProps> = ({
   const deckY = -deckHeight * scale;
   const topY = -topHeight * scale;
   const bodyH = (topHeight - deckHeight) * scale;
+
   const bodyColor = color ?? palette.boxVanBlue;
   const trim = accent ?? palette.curtainTrim;
   const hasKingpin = vehicle?.attachments?.some((a) => a.kind === 'kingpin');
@@ -44,7 +37,7 @@ const BoxVan: FC<BodyRenderProps> = ({
         y2={deckY - 2}
         stroke={trim}
         strokeWidth={0.5}
-        opacity={0.35}
+        opacity={0.3}
       />
     );
   });
@@ -62,32 +55,26 @@ const BoxVan: FC<BodyRenderProps> = ({
         y2={y}
         stroke={trim}
         strokeWidth={0.4}
-        opacity={0.6}
+        opacity={0.55}
       />
     );
   });
 
   return (
     <g>
-      {/* Box body */}
-      <rect
-        x={0}
-        y={topY}
-        width={L}
-        height={bodyH}
-        fill={bodyColor}
-        stroke={trim}
-        strokeWidth={0.8}
-        rx={2}
+      <ClosedTrailerBody
+        scale={scale}
+        bodyLength={bodyLength}
+        deckHeight={deckHeight}
+        topHeight={topHeight}
+        color={bodyColor}
+        trim={trim}
+        hasKingpin={hasKingpin}
       />
-      {/* Top trim */}
-      <rect x={0} y={topY} width={L} height={0.15 * scale} fill={trim} opacity={0.8} rx={2} />
-      {/* Bottom trim */}
-      <rect x={0} y={deckY - 0.1 * scale} width={L} height={0.1 * scale} fill={trim} opacity={0.7} />
 
       {ribs}
 
-      {/* Rear roller door frame */}
+      {/* Rear roller door frame + slats */}
       <rect
         x={L - 0.6 * scale}
         y={topY + 0.25 * scale}
@@ -100,7 +87,6 @@ const BoxVan: FC<BodyRenderProps> = ({
         rx={1}
       />
       {slats}
-      {/* Handle */}
       <rect
         x={L - 0.45 * scale}
         y={topY + bodyH * 0.72}
@@ -110,28 +96,15 @@ const BoxVan: FC<BodyRenderProps> = ({
         rx={0.5}
       />
 
-      <ChassisRail length={bodyLength} scale={scale} deckHeight={deckHeight - 0.15} />
-      <SideSkirt x={3.5 * scale} width={Math.max(0, L - 6 * scale)} scale={scale} deckHeight={deckHeight} color={bodyColor} />
-
       {freightSlots?.map((slot, i) => (
-        <g key={i} opacity={0.5}>
-          <FreightSlotShape
-            x={slot.start * scale}
-            deckY={deckY}
-            width={slot.length * scale}
-            height={bodyH * 0.9}
-            label={slot.label}
-            loaded={slot.loaded}
-          />
-        </g>
+        <SlotTag
+          key={i}
+          x={(slot.start + slot.length / 2) * scale}
+          y={topY - 12}
+          label={slot.label}
+          loaded={slot.loaded}
+        />
       ))}
-
-      <MarkerLight x={0.6 * scale} y={topY + 3} />
-      <MarkerLight x={L * 0.5} y={topY + 3} />
-      <MarkerLight x={L - 0.6 * scale} y={topY + 3} color={palette.markerRed} />
-
-      {hasKingpin && <LandingLegs x={2.0 * scale} deckHeight={deckHeight} scale={scale} raised />}
-      <MudFlap x={L - WHEEL_RADIUS_M * scale} scale={scale} deckHeight={deckHeight} />
     </g>
   );
 };
