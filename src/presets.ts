@@ -63,9 +63,15 @@ const semi = (
     slots?: Vehicle['freightSlots'];
     label?: string;
     bodyColor?: string;
+    /** When true, append a rear drawbar-hitch so a dolly can couple behind. */
+    towing?: boolean;
   } = {},
 ): Vehicle => {
   const length = opts.length ?? 13.7;
+  const attachments: Vehicle['attachments'] = [{ kind: 'kingpin', position: 1.2 }];
+  if (opts.towing) {
+    attachments.push({ kind: 'drawbar-hitch', position: length - 0.1 });
+  }
   return {
     id,
     kind: 'semi-trailer',
@@ -73,7 +79,7 @@ const semi = (
     bodyType: opts.bodyType ?? 'curtain-sider',
     bodyColor: opts.bodyColor,
     axles: [{ count: 3, position: length - 1.6, spacing: 1.35, tyres: 'dual', label: 'tri' }],
-    attachments: [{ kind: 'kingpin', position: 1.2 }],
+    attachments,
     freightSlots: opts.slots,
     label: opts.label ?? 'Semi-Trailer',
   };
@@ -112,9 +118,16 @@ const bTrailer = (
     length?: number;
     slots?: Vehicle['freightSlots'];
     bodyColor?: string;
+    label?: string;
+    /** When true, append a rear turntable so another trailer's kingpin can couple behind (middle of a B-triple). */
+    middle?: boolean;
   } = {},
 ): Vehicle => {
   const length = opts.length ?? 11.5;
+  const attachments: Vehicle['attachments'] = [{ kind: 'kingpin', position: 0.9 }];
+  if (opts.middle) {
+    attachments.push({ kind: 'turntable', position: length - 0.7 });
+  }
   return {
     id,
     kind: 'b-trailer',
@@ -122,9 +135,9 @@ const bTrailer = (
     bodyType: opts.bodyType ?? 'curtain-sider',
     bodyColor: opts.bodyColor,
     axles: [{ count: 2, position: length - 1.7, spacing: 1.35, tyres: 'dual', label: 'tandem' }],
-    attachments: [{ kind: 'kingpin', position: 0.9 }],
+    attachments,
     freightSlots: opts.slots,
-    label: 'B-Trailer',
+    label: opts.label ?? 'B-Trailer',
   };
 };
 
@@ -363,6 +376,7 @@ export const presets: Combination[] = [
         bodyType: 'curtain-sider',
         bodyColor: '#2f6b3e',
         label: 'Lead',
+        towing: true,
         slots: [
           { start: 1.8, length: 3.6, label: 'L1', loaded: true, loadType: 'pallet-stack' },
           { start: 5.6, length: 3.6, label: 'L2', loaded: true, loadType: 'pallet-stack' },
@@ -388,9 +402,9 @@ export const presets: Combination[] = [
     description: 'Prime mover + 3 tankers coupled via dollies (≈ 53 m).',
     vehicles: [
       primeMover('pm11', { cabType: 'bonneted-sleeper', color: '#cbd5e1' }),
-      semi('tk2', { bodyType: 'tanker', label: 'Tanker 1' }),
+      semi('tk2', { bodyType: 'tanker', label: 'Tanker 1', towing: true }),
       dolly('dly2'),
-      semi('tk3', { bodyType: 'tanker', label: 'Tanker 2' }),
+      semi('tk3', { bodyType: 'tanker', label: 'Tanker 2', towing: true }),
       dolly('dly3'),
       semi('tk4', { bodyType: 'tanker', label: 'Tanker 3' }),
     ],
@@ -411,6 +425,7 @@ export const presets: Combination[] = [
       bTrailer('b3', {
         bodyType: 'refrigerated',
         length: 10.0,
+        middle: true,
         slots: [
           { start: 1.4, length: 7.2, label: 'B1', loaded: true, loadType: 'pallet-stack' },
         ],

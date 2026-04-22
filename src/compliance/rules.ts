@@ -62,8 +62,35 @@ const has = (v: Vehicle, k: AttachmentKind) => !!v.attachments?.some((a) => a.ki
 const countKind = (c: Combination, ks: Vehicle['kind'][]) =>
   c.vehicles.filter((v) => ks.includes(v.kind)).length;
 
+/** Compute the real end-to-end length, accounting for coupling overlap.
+ *  Mirrors the layout algorithm in TruckCombination.tsx: vehicles place themselves by
+ *  matching kingpin↔turntable / drawbar-eye↔drawbar-hitch attachments, so a trailer's
+ *  front sits at (prev.turntable - curr.kingpin) + prev.x0, not tacked on end-to-end. */
+/** Compute the real end-to-end length, accounting for coupling overlap.
+ *  Mirrors TruckCombination.tsx's layout: vehicles place themselves by matching
+ *  kingpin↔turntable / drawbar-eye↔drawbar-hitch attachments, so a trailer's
+ *  front sits at (prev.turntable − curr.kingpin) offset, not tacked on end-to-end. */
 export function computeOverallLength(c: Combination): number {
-  return c.vehicles.reduce((s, v) => s + v.length, 0);
+  if (c.vehicles.length === 0) return 0;
+  const xs: number[] = [0];
+  let rearmost = c.vehicles[0].length;
+  for (let i = 1; i < c.vehicles.length; i++) {
+    const v = c.vehicles[i];
+    const prev = c.vehicles[i - 1];
+    const prevAtt = (ks: AttachmentKind[]) => prev.attachments?.find((a) => ks.includes(a.kind));
+    const currAtt = (ks: AttachmentKind[]) => v.attachments?.find((a) => ks.includes(a.kind));
+    const pin = currAtt(['kingpin']);
+    const tt = prevAtt(['turntable']);
+    const eye = currAtt(['drawbar-eye']);
+    const hitch = prevAtt(['drawbar-hitch']);
+    let x0: number;
+    if (pin && tt) x0 = xs[i - 1] + tt.position - pin.position;
+    else if (eye && hitch) x0 = xs[i - 1] + hitch.position - eye.position + 0.7;
+    else x0 = rearmost + 0.3;
+    xs.push(x0);
+    rearmost = Math.max(rearmost, x0 + v.length);
+  }
+  return rearmost;
 }
 
 export function classifyCombination(c: Combination): NhvrClass {

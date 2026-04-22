@@ -36,18 +36,24 @@ const rigid = (id: string, length: number, towing = false): Vehicle => ({
   label: 'Rigid',
 });
 
-const semi = (id: string, length: number, label?: string): Vehicle => ({
-  id,
-  kind: 'semi-trailer',
-  length,
-  bodyType: 'curtain-sider',
-  axles: [{ count: 3, position: length - 1.6, spacing: 1.35, tyres: 'dual', label: 'tri' }],
-  attachments: [{ kind: 'kingpin', position: 1.2 }],
-  freightSlots: [
-    { start: 1.6, length: length - 3.0, label: 'load', loaded: true, loadType: 'pallet-stack' },
-  ],
-  label: label ?? 'Semi',
-});
+const semi = (id: string, length: number, label?: string, towing = false): Vehicle => {
+  const attachments: Vehicle['attachments'] = [{ kind: 'kingpin', position: 1.2 }];
+  if (towing) {
+    attachments.push({ kind: 'drawbar-hitch', position: length - 0.1 });
+  }
+  return {
+    id,
+    kind: 'semi-trailer',
+    length,
+    bodyType: 'curtain-sider',
+    axles: [{ count: 3, position: length - 1.6, spacing: 1.35, tyres: 'dual', label: 'tri' }],
+    attachments,
+    freightSlots: [
+      { start: 1.6, length: length - 3.0, label: 'load', loaded: true, loadType: 'pallet-stack' },
+    ],
+    label: label ?? 'Semi',
+  };
+};
 
 const aTrailer = (id: string, length: number): Vehicle => ({
   id,
@@ -65,22 +71,28 @@ const aTrailer = (id: string, length: number): Vehicle => ({
   label: 'A-Trailer',
 });
 
-const bTrailer = (id: string, length: number, quad = false): Vehicle => ({
-  id,
-  kind: 'b-trailer',
-  length,
-  bodyType: 'curtain-sider',
-  axles: [
-    quad
-      ? { count: 4, position: length - 2.0, spacing: 1.3, tyres: 'dual', label: 'quad' }
-      : { count: 2, position: length - 1.7, spacing: 1.35, tyres: 'dual', label: 'tandem' },
-  ],
-  attachments: [{ kind: 'kingpin', position: 0.9 }],
-  freightSlots: [
-    { start: 1.4, length: length - 2.5, label: 'B', loaded: true, loadType: 'pallet-stack' },
-  ],
-  label: 'B-Trailer',
-});
+const bTrailer = (id: string, length: number, quad = false, middle = false): Vehicle => {
+  const attachments: Vehicle['attachments'] = [{ kind: 'kingpin', position: 0.9 }];
+  if (middle) {
+    attachments.push({ kind: 'turntable', position: length - 0.7 });
+  }
+  return {
+    id,
+    kind: 'b-trailer',
+    length,
+    bodyType: 'curtain-sider',
+    axles: [
+      quad
+        ? { count: 4, position: length - 2.0, spacing: 1.3, tyres: 'dual', label: 'quad' }
+        : { count: 2, position: length - 1.7, spacing: 1.35, tyres: 'dual', label: 'tandem' },
+    ],
+    attachments,
+    freightSlots: [
+      { start: 1.4, length: length - 2.5, label: 'B', loaded: true, loadType: 'pallet-stack' },
+    ],
+    label: 'B-Trailer',
+  };
+};
 
 const dolly = (id: string): Vehicle => ({
   id,
@@ -129,26 +141,26 @@ export const PBS_TEMPLATES: Combination[] = [
   {
     name: 'Class 3: B-Triple PBS (36.5m)',
     description: 'Prime mover + A + B + B under the PBS 36.5 m envelope.',
-    vehicles: [primeMover('pm'), aTrailer('a1', 8.4), bTrailer('b1', 10.1), bTrailer('b2', 11.0)],
+    vehicles: [primeMover('pm'), aTrailer('a1', 8.4), bTrailer('b1', 10.1, false, true), bTrailer('b2', 11.0)],
   },
   {
     name: 'PBS: A-Double Quad-Quad',
     description: 'PBS A-double with quad-axle B-trailer; tight 36.5 m build.',
-    vehicles: [primeMover('pm'), semi('s1', 12.8, 'Lead'), dolly('dly'), bTrailer('b1', 13.4, true)],
+    vehicles: [primeMover('pm'), semi('s1', 12.8, 'Lead', true), dolly('dly'), bTrailer('b1', 13.4, true)],
   },
   {
     name: 'Type 1 Road Train (36.5m)',
     description: 'Prime mover + semi + dolly + semi. 36.5 m double road train.',
-    vehicles: [primeMover('pm'), semi('s1', 12.8, 'Lead'), dolly('dly'), semi('s2', 13.4, 'Trail')],
+    vehicles: [primeMover('pm'), semi('s1', 12.8, 'Lead', true), dolly('dly'), semi('s2', 13.4, 'Trail')],
   },
   {
     name: 'Type 2 Road Train (53.5m)',
     description: 'Prime mover + 3 semis with 2 dollies. 53.5 m triple road train.',
     vehicles: [
       primeMover('pm'),
-      semi('s1', 13.4, 'Lead'),
+      semi('s1', 13.4, 'Lead', true),
       dolly('dly1'),
-      semi('s2', 13.4, 'Mid'),
+      semi('s2', 13.4, 'Mid', true),
       dolly('dly2'),
       semi('s3', 13.4, 'Tail'),
     ],
